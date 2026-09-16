@@ -19,7 +19,7 @@
  * Node 18+, or any runtime with a global fetch.
  */
 
-export const VERSION = "1.0.0";
+export const VERSION = "1.0.1";
 
 const DEFAULT_BASE = "https://apparel.monster";
 const API = "/api/v1";

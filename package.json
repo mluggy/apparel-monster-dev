@@ -1,6 +1,6 @@
 {
   "name": "apparel-monster",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "SDK and CLI for the Apparel Monster agent commerce API: search the catalog, build a cart, place an order, mint a wallet link. No authentication.",
   "keywords": [
     "apparel-monster",

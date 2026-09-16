@@ -68,7 +68,7 @@ def humanise(data)
 
     return data["products"].map { |product|
       prices = product.fetch("variants", []).map { |v| v["effective_price"] || v["price"] }.compact
-      sizes  = product.fetch("variants", []).filter_map { |v| v.dig("options", "Size") }.uniq
+      sizes  = product.fetch("variants", []).map { |v| v.dig("options", "Size") }.compact.uniq
       lines = [prices.any? ? format("%s  $%.2f", product["title"], prices.min) : product["title"]]
       lines << "  #{product['category']}" if product["category"]
       lines << "  sizes: #{sizes.join(', ')}" if sizes.any?

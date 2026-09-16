@@ -71,36 +71,44 @@ def build_parser() -> argparse.ArgumentParser:
         epilog=EPILOG,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--base", default="https://apparel.monster", help="point at another origin")
-    parser.add_argument("--text", action="store_true", help="human-readable output instead of JSON")
     parser.add_argument("--version", action="version", version=VERSION)
+
+    # Flags that belong to every sub-command, attached to both the top level and
+    # each sub-parser. argparse otherwise accepts them only BEFORE the
+    # sub-command, which is not where anyone types them:
+    #   apparel-monster search "denim shirt" --text   <- the natural order
+    common = argparse.ArgumentParser(add_help=False)
+    common.add_argument("--base", default="https://apparel.monster", help="point at another origin")
+    common.add_argument("--text", action="store_true", help="human-readable output instead of JSON")
+    parser.add_argument("--base", default="https://apparel.monster", help=argparse.SUPPRESS)
+    parser.add_argument("--text", action="store_true", help=argparse.SUPPRESS)
 
     sub = parser.add_subparsers(dest="command", required=True)
 
-    search = sub.add_parser("search", help="search the catalog")
+    search = sub.add_parser("search", help="search the catalog", parents=[common])
     search.add_argument("query", nargs="*")
     search.add_argument("--limit", type=int)
     search.add_argument("--category")
     search.add_argument("--sort", choices=["relevance", "cheapest", "expensive", "newest", "name", "popular"])
 
-    product = sub.add_parser("product", help="full detail for product or variant ids")
+    product = sub.add_parser("product", help="full detail for product or variant ids", parents=[common])
     product.add_argument("ids", nargs="+")
 
-    ask = sub.add_parser("ask", help="natural-language search (NLWeb)")
+    ask = sub.add_parser("ask", help="natural-language search (NLWeb)", parents=[common])
     ask.add_argument("question", nargs="+")
     ask.add_argument("--limit", type=int)
     ask.add_argument("--stream", action="store_true")
 
-    sub.add_parser("pricing", help="plans, limits and merchandise price ranges")
+    sub.add_parser("pricing", help="plans, limits and merchandise price ranges", parents=[common])
 
-    buy = sub.add_parser("buy", help="mint an Apple Pay / Google Pay link for one variant")
+    buy = sub.add_parser("buy", help="mint an Apple Pay / Google Pay link for one variant", parents=[common])
     buy.add_argument("variant_id")
 
-    watch = sub.add_parser("watch", help="watch a variant for a target price")
+    watch = sub.add_parser("watch", help="watch a variant for a target price", parents=[common])
     watch.add_argument("variant_id")
     watch.add_argument("target_price", type=float)
 
-    status = sub.add_parser("watch-status", help="poll a price watch")
+    status = sub.add_parser("watch-status", help="poll a price watch", parents=[common])
     status.add_argument("watch_id")
 
     return parser

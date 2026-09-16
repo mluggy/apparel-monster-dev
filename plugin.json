@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "apparel-monster",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Shop apparel.monster: search 116 products, build a cart, place an order, mint an Apple Pay / Google Pay link, watch a price. Anonymous — no API key. Demo store: orders are placed against a test gateway and never fulfilled.",
   "author": {
     "name": "Michael Lugassy",

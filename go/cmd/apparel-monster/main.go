@@ -81,17 +81,27 @@ func run() error {
 	stream := flags.Bool("stream", false, "stream results")
 	version := flags.Bool("version", false, "print the version")
 
-	// Flags after the sub-command, which is where people actually type them.
 	args := os.Args[1:]
 	if len(args) == 0 {
 		fmt.Println(usage)
 		return nil
 	}
 	command := args[0]
-	if err := flags.Parse(args[1:]); err != nil {
+
+	// flag.Parse stops at the first non-flag argument, so
+	//
+	//	apparel-monster search "denim shirt" -limit 1 -text
+	//
+	// would leave -limit and -text unparsed and fold them into the query — the
+	// search then looks for the literal string `denim shirt -limit 1 -text` and
+	// finds nothing. Splitting first means flags work wherever they are typed,
+	// which is how every other CLI in this repository behaves.
+	flagArgs, rest := splitArgs(args[1:], map[string]bool{
+		"text": true, "stream": true, "version": true, "help": true,
+	})
+	if err := flags.Parse(flagArgs); err != nil {
 		return err
 	}
-	rest := flags.Args()
 
 	if *version || command == "version" {
 		fmt.Println(apparelmonster.Version)
@@ -250,6 +260,38 @@ func run() error {
 	}
 
 	return nil
+}
+
+// splitArgs separates flag tokens from positional ones, so they can be typed in
+// any order. booleans names the flags that do NOT consume the following token;
+// everything else takes a value, either as -flag value or -flag=value.
+func splitArgs(args []string, booleans map[string]bool) (flagArgs, positional []string) {
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+
+		if arg == "--" {
+			positional = append(positional, args[i+1:]...)
+			return flagArgs, positional
+		}
+
+		if !strings.HasPrefix(arg, "-") || arg == "-" {
+			positional = append(positional, arg)
+			continue
+		}
+
+		flagArgs = append(flagArgs, arg)
+
+		name := strings.TrimLeft(arg, "-")
+		if strings.Contains(name, "=") || booleans[name] {
+			continue
+		}
+		// Takes a value, and it is the next token.
+		if i+1 < len(args) {
+			i++
+			flagArgs = append(flagArgs, args[i])
+		}
+	}
+	return flagArgs, positional
 }
 
 func emit(value any) error {

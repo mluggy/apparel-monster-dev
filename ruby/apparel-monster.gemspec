@@ -24,8 +24,12 @@ Gem::Specification.new do |spec|
     "homepage_uri" => "https://apparel.monster/developers",
     "source_code_uri" => "https://github.com/mluggy/apparel-monster-dev",
     "bug_tracker_uri" => "https://github.com/mluggy/apparel-monster-dev/issues",
+    "changelog_uri" => "https://github.com/mluggy/apparel-monster-dev/releases",
     "documentation_uri" => "https://apparel.monster/developers",
-    "rubygems_mfa_required" => "false"
+    # Refuses a `gem push` that is not backed by multi-factor auth. The account
+    # already requires an OTP interactively; this makes it a property of the
+    # gem, so a leaked API key alone cannot publish a version.
+    "rubygems_mfa_required" => "true"
   }
 
   spec.files = Dir["lib/**/*.rb", "exe/*", "LICENSE", "README.md"]

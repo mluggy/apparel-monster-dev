@@ -1,0 +1,164 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# apparel-monster — the store from a terminal.
+#
+# Identifies itself as ruby-cli rather than ruby-sdk, so the store can tell a
+# person poking at the API from an integration running in production. Same
+# client, one flag apart.
+#
+# Prints JSON unless --text is passed: the usual reader here is a script or an
+# agent, not a person.
+
+require "json"
+require "optparse"
+require_relative "../lib/apparel_monster"
+
+USAGE = <<~TEXT
+  apparel-monster #{ApparelMonster::VERSION} — agent commerce CLI for apparel.monster
+
+  USAGE
+    apparel-monster <command> [args] [flags]
+
+  COMMANDS
+    search <query>              Search the catalog
+    product <id...>             Full detail for product or variant ids
+    ask <question>              Natural-language search (NLWeb)
+    pricing                     Plans, limits and merchandise price ranges
+    buy <variant-id>            Mint an Apple Pay / Google Pay link for one variant
+    watch <variant-id> <price>  Watch a variant for a target price
+    watch-status <id>           Poll a price watch
+
+  FLAGS
+    --limit N         Results to return
+    --category PATH   Browse a category instead of searching
+    --sort SORT       relevance | cheapest | expensive | newest | name | popular
+    --base URL        Point at another origin
+    --text            Human-readable output instead of JSON
+    --stream          Stream results as they arrive (ask)
+
+  The API needs no credentials. This is a demo store: orders are placed against
+  a test gateway, nothing ships and no money moves.
+TEXT
+
+options = { base: ApparelMonster::DEFAULT_BASE }
+parser = OptionParser.new do |opts|
+  opts.on("--limit N", Integer) { |v| options[:limit] = v }
+  opts.on("--category PATH") { |v| options[:category] = v }
+  opts.on("--sort SORT") { |v| options[:sort] = v }
+  opts.on("--base URL") { |v| options[:base] = v }
+  opts.on("--text") { options[:text] = true }
+  opts.on("--stream") { options[:stream] = true }
+  opts.on("-h", "--help") { puts USAGE; exit 0 }
+  opts.on("--version") { puts ApparelMonster::VERSION; exit 0 }
+end
+
+args = parser.parse(ARGV)
+command = args.shift
+
+if command.nil? || command == "help"
+  puts USAGE
+  exit 0
+end
+
+# Just enough formatting to read a result without piping through jq.
+def humanise(data)
+  if data.is_a?(Hash) && data["products"].is_a?(Array)
+    return "No products matched. Try fewer words, or browse: apparel-monster search --category categories/men" if data["products"].empty?
+
+    return data["products"].map { |product|
+      prices = product.fetch("variants", []).map { |v| v["effective_price"] || v["price"] }.compact
+      sizes  = product.fetch("variants", []).filter_map { |v| v.dig("options", "Size") }.uniq
+      lines = [prices.any? ? format("%s  $%.2f", product["title"], prices.min) : product["title"]]
+      lines << "  #{product['category']}" if product["category"]
+      lines << "  sizes: #{sizes.join(', ')}" if sizes.any?
+      lines << "  #{product['url']}"
+      lines.join("\n")
+    }.join("\n\n")
+  end
+
+  if data.is_a?(Hash) && data["results"].is_a?(Array)
+    if data["results"].empty?
+      query = data.dig("_meta", "query")
+      return "No match for #{query.inspect}. /ask matches keywords, not meaning — try fewer words " \
+             '("coat" rather than "warm winter coat").'
+    end
+    return data["results"].map { |r| "#{r['name']}\n  #{r['description']}\n  #{r['url']}" }.join("\n\n")
+  end
+
+  JSON.pretty_generate(data)
+end
+
+def emit(data, options)
+  puts options[:text] ? humanise(data) : JSON.pretty_generate(data)
+end
+
+store = ApparelMonster::Client.new(base_url: options[:base], cli: true)
+
+begin
+  case command
+  when "search"
+    emit(store.search(args.join(" ").empty? ? nil : args.join(" "),
+                      limit: options[:limit], category: options[:category], sort: options[:sort]), options)
+
+  when "product"
+    abort "product needs at least one id" if args.empty?
+    emit(store.product(args), options)
+
+  when "ask"
+    abort "ask needs a question" if args.empty?
+    question = args.join(" ")
+    if options[:stream]
+      store.ask_stream(question, limit: options[:limit]) do |event, data|
+        next unless event == "result"
+
+        puts options[:text] ? "#{data['name']} — #{data['url']}" : JSON.generate(data)
+      end
+    else
+      emit(store.ask(question, limit: options[:limit]), options)
+    end
+
+  when "pricing"
+    # The prose document rather than an endpoint: it is the canonical answer to
+    # "what does this cost", and markdown reads fine here.
+    require "net/http"
+    uri = URI("#{store.base_url}/pricing.md")
+    request = Net::HTTP::Get.new(uri)
+    store.headers("text/markdown").each { |k, v| request[k] = v }
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.use_ssl = true
+    puts http.request(request).body
+
+  when "buy"
+    abort "buy needs a variant id — get one from `apparel-monster search`" if args.empty?
+    result = store.wallet([{ "variant_id" => args.first, "quantity" => 1 }])
+    if options[:text]
+      puts "Open this to pay:\n  #{result['wallet_url']}"
+    else
+      emit(result, options)
+    end
+
+  when "watch"
+    abort "watch needs a variant id and a target price" if args.length < 2
+    result = store.watch_price(args[0], args[1].to_f)
+    if options[:text]
+      puts result["status"] == "already_met" ? "Already #{result['current_price']} — below your #{result['target_price']} target." : "Watching. Poll: #{result['poll_url']}"
+    else
+      emit(result, options)
+    end
+
+  when "watch-status"
+    abort "watch-status needs a watch id" if args.empty?
+    emit(store.price_watch(args.first), options)
+
+  else
+    warn "Unknown command: #{command}\n\n"
+    puts USAGE
+    exit 1
+  end
+rescue ApparelMonster::Error => e
+  # The API's own message already names the missing fields and the next call;
+  # repeating them here would only make it longer.
+  warn "#{e.code || 'error'}: #{e.message}"
+  exit 1
+end

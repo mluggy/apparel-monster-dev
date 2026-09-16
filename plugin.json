@@ -1,0 +1,14 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "apparel-monster",
+  "version": "1.0.0",
+  "description": "Shop apparel.monster: search 116 products, build a cart, place an order, mint an Apple Pay / Google Pay link, watch a price. Anonymous — no API key. Demo store: orders are placed against a test gateway and never fulfilled.",
+  "author": {
+    "name": "Michael Lugassy",
+    "url": "https://apparel.monster"
+  },
+  "homepage": "https://apparel.monster/developers",
+  "repository": "https://github.com/mluggy/apparel-monster-dev",
+  "license": "MIT",
+  "keywords": ["ecommerce", "shopping", "apparel", "agentic-commerce", "mcp", "checkout", "catalog"]
+}

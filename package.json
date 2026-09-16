@@ -1,0 +1,57 @@
+{
+  "name": "apparel-monster",
+  "version": "1.0.0",
+  "description": "SDK and CLI for the Apparel Monster agent commerce API: search the catalog, build a cart, place an order, mint a wallet link. No authentication.",
+  "keywords": [
+    "apparel-monster",
+    "sdk",
+    "cli",
+    "api-client",
+    "mcp",
+    "agent",
+    "agentic-commerce",
+    "ecommerce",
+    "spree"
+  ],
+  "homepage": "https://apparel.monster/developers",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mluggy/apparel-monster-dev.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mluggy/apparel-monster-dev/issues"
+  },
+  "license": "MIT",
+  "author": "Michael Lugassy (https://apparel.monster)",
+  "type": "module",
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/index.js"
+    }
+  },
+  "bin": {
+    "apparel-monster": "./src/cli.js"
+  },
+  "files": [
+    "src",
+    "skills",
+    "AGENTS.md",
+    "plugin.json",
+    "mcp.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {},
+  "publishConfig": {
+    "access": "public"
+  }
+}

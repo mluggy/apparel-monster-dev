@@ -1,0 +1,15 @@
+node_modules/
+*.log
+
+__pycache__/
+*.py[cod]
+.venv/
+dist/
+build/
+*.egg-info/
+
+*.gem
+.bundle/
+vendor/bundle/
+
+.DS_Store

@@ -34,7 +34,7 @@ import (
 )
 
 // Version is reported in the User-Agent and X-Agent-Client headers.
-const Version = "1.0.1"
+const Version = "1.0.2"
 
 const (
 	defaultBaseURL = "https://apparel.monster"

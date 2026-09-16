@@ -17,7 +17,7 @@ import urllib.parse
 import urllib.request
 from typing import Any, Iterator
 
-VERSION = "1.0.1"
+VERSION = "1.0.2"
 
 DEFAULT_BASE = "https://apparel.monster"
 API = "/api/v1"
